@@ -5,7 +5,7 @@
       "usingDirectivesPlacement": "outsideNamespace"
     },
     "documentationRules": {
-      "companyName": "Squidex UG (haftungsbeschraenkt)",
+      "companyName": "MMTest",
       "copyrightText": "==========================================================================\n Squidex Headless CMS\n==========================================================================\n Copyright (c) {companyName}\n All rights reserved. Licensed under the {licenseName} license.\n==========================================================================",
       "variables": {
         "licenseName": "MIT"

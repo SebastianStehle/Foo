@@ -1,18 +1,24 @@
-﻿using System;
-using System.IO.MemoryMappedFiles;
+﻿// ==========================================================================
+//  Squidex Headless CMS
+// ==========================================================================
+//  Copyright (c) MMTest
+//  All rights reserved. Licensed under the MIT license.
+// ==========================================================================
+
+using System;
+using System.IO;
 
 namespace ConsoleApp1
 {
-    class Program
+    public class Program
     {
-        static void Main(string[] args)
+        public static void Main(string[] args)
         {
-
-            var array = new MemoryMappedArray<int>(new System.IO.FileInfo("Foo.txt"));
+            var array = new MemoryMappedArray<int>(new FileInfo("ff"));
             array.Add(1);
             array.Add(12);
 
-            var count = array.Count;
+            var count = array.Length;
 
             for (var i = 0; i < int.MaxValue; i++)
             {
@@ -27,7 +33,16 @@ namespace ConsoleApp1
 
             Console.WriteLine(count);
             Console.WriteLine("Hello World!");
+        }
 
+        private void TestSomething(Action<MemoryMappedArray<int>> action)
+        {
+            var file = new FileInfo("Test.mm");
+
+            using (var array = new MemoryMappedArray<int>(file))
+            {
+                action(array);
+            }
         }
     }
 }
