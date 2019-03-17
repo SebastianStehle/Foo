@@ -89,20 +89,6 @@ namespace ConsoleApp1
             mappedView.Write(0, length);
         }
 
-        public bool TryGet(long index, out T value)
-        {
-            if (index >= 0 && index < length)
-            {
-                mappedView.Read(GetPosition(index), out value);
-                return true;
-            }
-            else
-            {
-                value = default(T);
-                return false;
-            }
-        }
-
         public void Add(T value)
         {
             Add(ref value);
@@ -208,6 +194,39 @@ namespace ConsoleApp1
             DecrementLength(count);
         }
 
+        public bool TryGet(long index, out T value)
+        {
+            if (index >= 0 && index < length)
+            {
+                mappedView.Read(GetPosition(index), out value);
+                return true;
+            }
+
+            value = default(T);
+
+            return false;
+        }
+
+        public bool TryGetRange(long index, int count, T[] result)
+        {
+            if (index >= 0 && index + count <= length)
+            {
+                mappedView.ReadArray(GetPosition(index), result, 0, count);
+                return true;
+            }
+
+            return false;
+        }
+
+        public T[] ToArray()
+        {
+            var result = new T[length];
+
+            mappedView.ReadArray(Offset, result, 0, (int)length);
+
+            return result;
+        }
+
         private void Shift(long index, long offset)
         {
             EnsureSize(lastPointer + (offset * ItemSize));
@@ -243,15 +262,6 @@ namespace ConsoleApp1
                     mappedView.WriteArray(bucketOffset + itemsOffset, temp, 0, bucketSize);
                 }
             }
-        }
-
-        public T[] ToArray()
-        {
-            var result = new T[length];
-
-            mappedView.ReadArray(Offset, result, 0, (int)length);
-
-            return result;
         }
 
         private void IncrementLength(int d = 1)

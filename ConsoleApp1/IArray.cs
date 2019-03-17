@@ -38,5 +38,7 @@ namespace ConsoleApp1
         T[] ToArray();
 
         bool TryGet(long index, out T value);
+
+        bool TryGetRange(long index, int count, T[] result);
     }
 }

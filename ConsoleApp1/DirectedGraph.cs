@@ -5,22 +5,19 @@
 //  All rights reserved. Licensed under the MIT license.
 // ==========================================================================
 
-#pragma warning disable SA1306 // Field names must begin with lower-case letter
-
 using System;
 
 namespace ConsoleApp1
 {
-    public sealed class DirectedGraph<TVertexArray, TVertex, TEdgeArray, TEdge>
+    public sealed partial class DirectedGraph<TVertexArray, TVertex, TEdgeArray, TEdge> : IGraph<TVertex, TEdge>
         where TVertex : struct
-        where TVertexArray : IArray<DirectedVertex<TVertex>>
+        where TVertexArray : IArray<GraphVertex<TVertex>>
         where TEdge : struct
-        where TEdgeArray : IArray<DirectedEdge<TEdge>>
+        where TEdgeArray : IArray<GraphEdge<TEdge>>
     {
+        private const long VertexDeleted = -1;
         private readonly TVertexArray vertices;
         private readonly TEdgeArray edges;
-        private DirectedVertex<TVertex> vertex;
-        private DirectedEdge<TEdge> edge;
 
         public DirectedGraph(TVertexArray vertices, TEdgeArray edges)
         {
@@ -31,62 +28,146 @@ namespace ConsoleApp1
 
         public long AddVertex(ref TVertex data)
         {
-            vertices.Add(new DirectedVertex<TVertex> { Metadata = data });
+            vertices.Add(new GraphVertex<TVertex> { Value = data });
 
             return vertices.Length - 1;
         }
 
         public void AddEdge(long v1, long v2, ref TEdge data)
         {
-            if (!vertices.TryGet(v2, out _) && !vertices.TryGet(v1, out vertex))
+            if (!vertices.TryGet(v2, out _) || !vertices.TryGet(v1, out var vertex))
             {
                 throw new IndexOutOfRangeException();
             }
 
-            if (vertex.EdgeCount == 0)
-            {
-                edge.Metadata = data;
-                edge.Vertex2 = v2;
+            var edge = default(GraphEdge<TEdge>);
 
+            if (vertex.EdgeLength == 0)
+            {
+                edge.Value = data;
+                edge.Vertex1 = v1;
+                edge.Vertex2 = v2;
                 edges.Add(ref edge);
 
-                vertex.EdgeCount++;
-                vertex.EdgeFirst = edges.Length - 1;
-
+                vertex.EdgeLength++;
+                vertex.EdgeOffset = edges.Length - 1;
                 vertices.Set(v1, ref vertex);
             }
             else
             {
-                for (var i = 0; i < vertex.EdgeCount; i++)
+                for (var i = 0; i < vertex.EdgeLength; i++)
                 {
-                    var index = i + vertex.EdgeFirst;
+                    var index = i + vertex.EdgeOffset;
 
                     if (edges.TryGet(i, out edge) && edge.Vertex2 == v2)
                     {
-                        edge.Metadata = data;
+                        edge.Value = data;
                         edges.Set(index, edge);
 
                         return;
                     }
                 }
 
-                edge.Metadata = data;
+                edge.Value = data;
+                edge.Vertex1 = v1;
                 edge.Vertex2 = v2;
+                edges.Insert(vertex.EdgeOffset + vertex.EdgeLength, ref edge);
 
-                edges.Insert(vertex.EdgeFirst + vertex.EdgeCount, ref edge);
-
-                vertex.EdgeCount++;
-
+                vertex.EdgeLength++;
                 vertices.Set(v1, ref vertex);
 
-                for (var i = vertex.EdgeFirst + vertex.EdgeCount; i < edges.Length;)
-                {
-                    vertices.TryGet(i, out vertex);
-                    vertex.EdgeFirst++;
-                    vertices.Set(i, vertex);
+                UpdateOffsetsAfter(v1, ref vertex, -1);
+            }
+        }
 
-                    i += vertex.EdgeCount;
+        public bool TryRemoveVertex(long id)
+        {
+            if (vertices.TryGet(id, out var vertex) && vertex.EdgeOffset != VertexDeleted)
+            {
+                edges.RemoveRange(vertex.EdgeOffset, (int)vertex.EdgeLength);
+
+                vertex.EdgeOffset = VertexDeleted;
+                vertices.Set(id, vertex);
+
+                return true;
+            }
+
+            return false;
+        }
+
+        public bool TryRemoveEdge(long v1, long v2)
+        {
+            if (vertices.TryGet(v2, out _) && vertices.TryGet(v1, out var vertex))
+            {
+                var edge = default(GraphEdge<TEdge>);
+
+                for (var i = 0; i < vertex.EdgeLength; i++)
+                {
+                    var index = i + vertex.EdgeOffset;
+
+                    if (edges.TryGet(i, out edge) && edge.Vertex2 == v2)
+                    {
+                        edges.Remove(index);
+
+                        vertex.EdgeLength--;
+                        vertices.Set(v1, vertex);
+
+                        UpdateOffsetsAfter(v1, ref vertex, -1);
+
+                        return true;
+                    }
                 }
+            }
+
+            return false;
+        }
+
+        public bool TryGetVertex(long v, out TVertex data)
+        {
+            if (vertices.TryGet(v, out var vertex))
+            {
+                data = vertex.Value;
+                return true;
+            }
+
+            data = default(TVertex);
+
+            return false;
+        }
+
+        public bool TryGetEdge(long v1, long v2, out TEdge data)
+        {
+            if (vertices.TryGet(v2, out _) && vertices.TryGet(v1, out var vertex))
+            {
+                var edge = default(GraphEdge<TEdge>);
+
+                for (var i = 0; i < vertex.EdgeLength; i++)
+                {
+                    var index = i + vertex.EdgeOffset;
+
+                    if (edges.TryGet(i, out edge) && edge.Vertex2 == v2)
+                    {
+                        data = edge.Value;
+
+                        return true;
+                    }
+                }
+            }
+
+            data = default(TEdge);
+
+            return false;
+        }
+
+        private void UpdateOffsetsAfter(long id, ref GraphVertex<TVertex> vertex, int offset)
+        {
+            for (var i = vertex.EdgeOffset + vertex.EdgeLength; i < edges.Length;)
+            {
+                vertices.TryGet(id, out vertex);
+                vertex.EdgeOffset += offset;
+                vertices.Set(id, vertex);
+
+                i += vertex.EdgeLength;
             }
         }
     }

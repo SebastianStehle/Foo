@@ -144,5 +144,28 @@ namespace XUnitTestProject1
             Assert.Equal(2, s1);
             Assert.Equal(3, s2);
         }
+
+        [Fact]
+        public void Should_get_item_by_range()
+        {
+            var result = new int[2];
+
+            Sut.Add(1);
+            Sut.Add(2);
+            Sut.Add(3);
+            Sut.Add(4);
+
+            Assert.False(Sut.TryGetRange(-1, 2, result));
+            Assert.False(Sut.TryGetRange(+3, 2, result));
+
+            Assert.True(Sut.TryGetRange(0, 2, result));
+            Assert.Equal(new[] { 1, 2 }, result);
+
+            Assert.True(Sut.TryGetRange(1, 2, result));
+            Assert.Equal(new[] { 2, 3 }, result);
+
+            Assert.True(Sut.TryGetRange(2, 2, result));
+            Assert.Equal(new[] { 3, 4 }, result);
+        }
     }
 }

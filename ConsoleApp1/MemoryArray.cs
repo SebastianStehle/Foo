@@ -97,11 +97,25 @@ namespace ConsoleApp1
                 value = inner[(int)index];
                 return true;
             }
-            else
+
+            value = default(T);
+
+            return false;
+        }
+
+        public bool TryGetRange(long index, int count, T[] result)
+        {
+            if (index >= 0 && index + count <= inner.Count)
             {
-                value = default(T);
-                return false;
+                for (var i = 0; i < count; i++)
+                {
+                    result[i] = inner[(int)index + i];
+                }
+
+                return true;
             }
+
+            return false;
         }
     }
 }

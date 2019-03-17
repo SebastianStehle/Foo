@@ -9,10 +9,12 @@
 
 namespace ConsoleApp1
 {
-    public struct DirectedEdge<T>
+    public struct GraphVertex<T>
     {
-        public long Vertex2;
+        public long EdgeLength;
 
-        public T Metadata;
+        public long EdgeOffset;
+
+        public T Value;
     }
 }
